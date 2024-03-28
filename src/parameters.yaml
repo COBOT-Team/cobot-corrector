@@ -1,0 +1,72 @@
+cobot_corrector_params:
+  cobot_prefix:
+    {
+      type: string,
+      default_value: "",
+      description: "The prefix to attach to parameters for this cobot.",
+    }
+
+  transforms:
+    eef_aruco_frame:
+      {
+        type: string,
+        default_value: "gripper_marker",
+        description: "The name of the frame_id of the end effector's ArUco marker.",
+      }
+    eef_frame:
+      {
+        type: string,
+        default_value: "gripper",
+        description: "The name of the frame_id of the end effector.",
+      }
+    base_frame:
+      {
+        type: string,
+        default_value: "base",
+        description: "The name of the frame_id of the base of the COBOT.",
+      }
+
+  subscriptions:
+    joint_states:
+      {
+        type: string,
+        default_value: "joint_states",
+        description: "The topic to subscribe to for the joint states.",
+      }
+    robot_description:
+      {
+        type: string,
+        default_value: "robot_description",
+        description: "The topic to subscribe to for the robot description.",
+      }
+
+  segments:
+    {
+      type: string_array,
+      default_value:
+        [
+          "base",
+          "link_0",
+          "link_1",
+          "link_2",
+          "link_3",
+          "link_4",
+          "link_5",
+        ],
+      description: "The names of the segments of the robot.",
+    }
+
+  joints:
+    {
+      type: string_array,
+      default_value:
+        [
+          "joint_0",
+          "joint_1",
+          "joint_2",
+          "joint_3",
+          "joint_4",
+          "joint_5",
+        ],
+      description: "The names of the joints of the robot.",
+    }
