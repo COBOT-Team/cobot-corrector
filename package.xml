@@ -11,9 +11,13 @@
   <depend>tf2</depend>
   <depend>tf2_geometry_msgs</depend>
   <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>geometry_msgs</depend>
   <depend>tf2_ros</depend>
   <depend>orocos_kdl_vendor</depend>
+  <depend>kdl_parser</depend>
   <depend>generate_parameter_library</depend>
+  <depend>message_filters</depend>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 

@@ -13,7 +13,11 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(orocos_kdl REQUIRED)
+find_package(kdl_parser REQUIRED)
+find_package(message_filters REQUIRED)
 find_package(generate_parameter_library REQUIRED)
 
 generate_parameter_library(
@@ -33,8 +37,12 @@ ament_target_dependencies(cobot_corrector PUBLIC
   tf2
   tf2_ros
   orocos_kdl
+  kdl_parser
   tf2_geometry_msgs
   std_msgs
+  sensor_msgs
+  geometry_msgs
+  message_filters
 )
 
 target_link_libraries(cobot_corrector PRIVATE

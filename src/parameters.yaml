@@ -39,34 +39,40 @@ cobot_corrector_params:
         default_value: "robot_description",
         description: "The topic to subscribe to for the robot description.",
       }
+    eef_pose:
+      {
+        type: string,
+        default_value: "eef_pose",
+        description: "The topic to subscribe to for the end effector pose.",
+      }
 
-  segments:
-    {
-      type: string_array,
-      default_value:
-        [
-          "base",
-          "link_0",
-          "link_1",
-          "link_2",
-          "link_3",
-          "link_4",
-          "link_5",
-        ],
-      description: "The names of the segments of the robot.",
-    }
+  publishers:
+    commands:
+      {
+        type: string,
+        default_value: "bias_controller/commands",
+        description:
+          "The topic to publish biases to. A position_controllers/JointGroupPositionController
+          subscribes to this topic.",
+      }
+
+  links:
+    base:
+      {
+        type: string,
+        default_value: "base",
+        description: "The name of the base link of the robot.",
+      }
+    last_link:
+      {
+        type: string,
+        default_value: "link_5",
+        description: "The name of the final link of the cobot.",
+      }
 
   joints:
     {
       type: string_array,
-      default_value:
-        [
-          "joint_0",
-          "joint_1",
-          "joint_2",
-          "joint_3",
-          "joint_4",
-          "joint_5",
-        ],
+      default_value: ["joint_0", "joint_1", "joint_2", "joint_3", "joint_4", "joint_5"],
       description: "The names of the joints of the robot.",
     }
