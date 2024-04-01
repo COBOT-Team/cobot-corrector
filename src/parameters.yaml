@@ -6,19 +6,21 @@ cobot_corrector_params:
       description: "The prefix to attach to parameters for this cobot.",
     }
 
+  aruco:
+    id:
+      {
+        type: int,
+        default_value: 12,
+        description: "The marker ID of this cobot's aruco."
+      }
+    size:
+      {
+        type: double,
+        default_value: 0.0295,
+        description: "The length of one side of the marker, in meters."
+      }
+
   transforms:
-    eef_aruco_frame:
-      {
-        type: string,
-        default_value: "gripper_marker",
-        description: "The name of the frame_id of the end effector's ArUco marker.",
-      }
-    eef_frame:
-      {
-        type: string,
-        default_value: "gripper",
-        description: "The name of the frame_id of the end effector.",
-      }
     base_frame:
       {
         type: string,
@@ -39,11 +41,19 @@ cobot_corrector_params:
         default_value: "robot_description",
         description: "The topic to subscribe to for the robot description.",
       }
-    eef_pose:
+    camera_base_topic:
       {
         type: string,
-        default_value: "eef_pose",
-        description: "The topic to subscribe to for the end effector pose.",
+        default_value: "kinect2/color/image_raw",
+        description: "The base topic that the overhead camera publishes to."
+      }
+
+  services:
+    execute:
+      {
+        type: string,
+        default_value: "cobot_corrector/execute",
+        description: "The name of the service that executes cobot correction."
       }
 
   publishers:
@@ -63,16 +73,87 @@ cobot_corrector_params:
         default_value: "base",
         description: "The name of the base link of the robot.",
       }
-    last_link:
+    eef_aruco:
       {
         type: string,
-        default_value: "link_5",
-        description: "The name of the final link of the cobot.",
+        default_value: "eef_aruco",
+        description: "The name of the link that ends at the end effector's aruco marker.",
       }
 
-  joints:
-    {
-      type: string_array,
-      default_value: ["joint_0", "joint_1", "joint_2", "joint_3", "joint_4", "joint_5"],
-      description: "The names of the joints of the robot.",
-    }
+
+  genetic_alg:
+    generation_size:
+      {
+        type: int,
+        default_value: 50,
+        description: "Number of configurations to try per generation."
+      }
+    max_iterations:
+      {
+        type: int,
+        default_value: 20,
+        description: "Maximum number of iterations to run."
+      }
+    exit_error:
+      {
+        type: double,
+        default_value: 0.018,
+        description: "The algorithm will exit if it reaches this error."
+      }
+    top_cut:
+      {
+        type: double,
+        default_value: 0.1,
+        description: "The fraction of configurations to keep between generations."
+      }
+    joints:
+      names:
+        {
+          type: string_array,
+          default_value: ["joint_0", "joint_1", "joint_2", "joint_3", "joint_4", "joint_5"],
+          description: "The names of the joints of the robot.",
+        }
+      mutation_factor:
+        {
+          type: double_array,
+          default_value: [0.017, 0.017, 0.052, 0.017, 0.034, 0.034],
+          description: "Maximum change for each joint between generations (radians)."
+        }
+    axes_weights:
+      x:
+        {
+          type: double,
+          default_value: 1,
+          description: "The weight of the X axis in the error function."
+        }
+      y:
+        {
+          type: double,
+          default_value: 1,
+          description: "The weight of the Y axis in the error function."
+        }
+      z:
+        {
+          type: double,
+          default_value: 0.1,
+          description: "The weight of the Z axis in the error function."
+        }
+      roll:
+        {
+          type: double,
+          default_value: 0.06,
+          description: "The weight of the roll axis in the error function."
+        }
+      pitch:
+        {
+          type: double,
+          default_value: 0.06,
+          description: "The weight of the pitch axis in the error function."
+        }
+      yaw:
+        {
+          type: double,
+          default_value: 0.1,
+          description: "The weight of the yaw axis in the error function."
+        }
+
