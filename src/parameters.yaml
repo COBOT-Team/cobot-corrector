@@ -103,7 +103,7 @@ cobot_corrector_params:
     top_cut:
       {
         type: double,
-        default_value: 0.05,
+        default_value: 0.1,
         description: "The fraction of configurations to keep between generations."
       }
     joints:
@@ -116,8 +116,8 @@ cobot_corrector_params:
       mutation_factor:
         {
           type: double_array,
-          # default_value: [0.017, 0.017, 0.052, 0.017, 0.034],
-          default_value: [0.005, 0.005, 0.02, 0.005, 0.005],
+          default_value: [0.017, 0.017, 0.052, 0.017, 0.034],
+          # default_value: [0.005, 0.005, 0.02, 0.005, 0.005],
           description: "Maximum change for each joint between generations (radians)."
         }
     axes_weights:
