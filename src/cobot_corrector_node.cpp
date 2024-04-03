@@ -337,8 +337,8 @@ void CobotCorrectorNode::execute_srv_callback_(const shared_ptr<CorrectCobotMsg:
         const auto rot = cartpos.M.Inverse() * marker_pose_kdl.M;
         const auto rot_axis = rot.GetRot();
         return abs(delta.x() * axes_weights.x) + abs(delta.y() * axes_weights.y) +
-                   abs(delta.z() * axes_weights.z) + abs(rot_axis.x() * axes_weights.roll) +
-                   abs(rot_axis.y() * axes_weights.pitch) + abs(rot_axis.z() * axes_weights.yaw);
+               abs(delta.z() * axes_weights.z) + abs(rot_axis.x() * axes_weights.roll) +
+               abs(rot_axis.y() * axes_weights.pitch) + abs(rot_axis.z() * axes_weights.yaw);
       }();
 
       // Add to results.
@@ -384,7 +384,7 @@ void CobotCorrectorNode::execute_srv_callback_(const shared_ptr<CorrectCobotMsg:
   // TODO: is this guaranteed to be in order?
   auto msg = std_msgs::msg::Float64MultiArray();
   for (size_t i = 0; i < best.rows(); ++i) {
-    msg.data.emplace_back(best(i));
+    msg.data.emplace_back(best(i) - kdl_joint_positions_(i));
   }
   commands_pub_->publish(msg);
 
