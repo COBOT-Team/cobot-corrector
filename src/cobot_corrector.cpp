@@ -1,10 +1,11 @@
-#include <cstdio>
+#include "cobot_corrector/cobot_corrector_node.hpp"
 
-int main(int argc, char ** argv)
+int main(int argc, char** argv)
 {
-  (void) argc;
-  (void) argv;
-
-  printf("hello world cobot_corrector package\n");
+  rclcpp::init(argc, argv);
+  auto node = rclcpp::Node::make_shared("cobot_corrector");
+  CobotCorrectorNode corrector(node);
+  rclcpp::spin(node);
+  rclcpp::shutdown();
   return 0;
 }

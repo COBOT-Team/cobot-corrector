@@ -11,6 +11,7 @@ find_package(rclcpp REQUIRED)
 find_package(urdf REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(tf2_kdl REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
@@ -19,6 +20,7 @@ find_package(chess_msgs REQUIRED)
 find_package(orocos_kdl REQUIRED)
 find_package(kdl_parser REQUIRED)
 find_package(cv_bridge REQUIRED)
+find_package(image_transport REQUIRED)
 find_package(generate_parameter_library REQUIRED)
 find_package(OpenCV REQUIRED)
 
@@ -27,7 +29,7 @@ generate_parameter_library(
   src/parameters.yaml
 )
 
-add_executable(cobot_corrector src/cobot_corrector.cpp)
+add_executable(cobot_corrector src/cobot_corrector.cpp src/cobot_corrector_node.cpp)
 target_include_directories(cobot_corrector PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
@@ -38,6 +40,7 @@ ament_target_dependencies(cobot_corrector PUBLIC
   urdf
   tf2
   tf2_ros
+  tf2_kdl
   orocos_kdl
   kdl_parser
   tf2_geometry_msgs
@@ -46,6 +49,7 @@ ament_target_dependencies(cobot_corrector PUBLIC
   geometry_msgs
   chess_msgs
   cv_bridge
+  image_transport
 )
 
 target_include_directories(cobot_corrector PUBLIC

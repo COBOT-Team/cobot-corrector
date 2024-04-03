@@ -10,6 +10,7 @@
 
 #include <chess_msgs/srv/correct_cobot.hpp>
 #include <cobot_corrector_params.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
 #include <image_transport/image_transport.hpp>
 #include <kdl/chain.hpp>
 #include <kdl/frames_io.hpp>
@@ -80,6 +81,7 @@ private:
   rclcpp::Service<chess_msgs::srv::CorrectCobot>::SharedPtr execute_srv_;
 
   rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr commands_pub_;
+  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr stamped_pub_;
 
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr robot_description_sub_;
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_states_sub_;
@@ -92,6 +94,10 @@ private:
   cv::Mat camera_matrix_;
   cv::Mat dist_coeffs_;
   cv::Mat image_;
+
+  bool found_image_;
+  bool found_robot_desc_;
+  bool found_joint_states_;
 
   KDL::Chain kdl_chain_;               // The kinematic chain of the cobot.
   KDL::JntArray kdl_joint_positions_;  // The joint positions of the cobot.

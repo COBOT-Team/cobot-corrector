@@ -85,13 +85,13 @@ cobot_corrector_params:
     generation_size:
       {
         type: int,
-        default_value: 50,
+        default_value: 1000,
         description: "Number of configurations to try per generation."
       }
     max_iterations:
       {
         type: int,
-        default_value: 20,
+        default_value: 1000,
         description: "Maximum number of iterations to run."
       }
     exit_error:
@@ -103,20 +103,21 @@ cobot_corrector_params:
     top_cut:
       {
         type: double,
-        default_value: 0.1,
+        default_value: 0.05,
         description: "The fraction of configurations to keep between generations."
       }
     joints:
       names:
         {
           type: string_array,
-          default_value: ["joint_0", "joint_1", "joint_2", "joint_3", "joint_4", "joint_5"],
+          default_value: ["joint_0", "joint_1", "joint_2", "joint_3", "joint_4"],
           description: "The names of the joints of the robot.",
         }
       mutation_factor:
         {
           type: double_array,
-          default_value: [0.017, 0.017, 0.052, 0.017, 0.034, 0.034],
+          # default_value: [0.017, 0.017, 0.052, 0.017, 0.034],
+          default_value: [0.005, 0.005, 0.02, 0.005, 0.005],
           description: "Maximum change for each joint between generations (radians)."
         }
     axes_weights:
@@ -135,25 +136,25 @@ cobot_corrector_params:
       z:
         {
           type: double,
-          default_value: 0.1,
+          default_value: 0.01,
           description: "The weight of the Z axis in the error function."
         }
       roll:
         {
           type: double,
-          default_value: 0.06,
+          default_value: 0.02,
           description: "The weight of the roll axis in the error function."
         }
       pitch:
         {
           type: double,
-          default_value: 0.06,
+          default_value: 0.02,
           description: "The weight of the pitch axis in the error function."
         }
       yaw:
         {
           type: double,
-          default_value: 0.1,
+          default_value: 0.02,
           description: "The weight of the yaw axis in the error function."
         }
 

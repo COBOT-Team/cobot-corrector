@@ -15,10 +15,12 @@
   <depend>geometry_msgs</depend>
   <depend>chess_msgs</depend>
   <depend>tf2_ros</depend>
+  <depend>tf2_kdl</depend>
   <depend>orocos_kdl_vendor</depend>
   <depend>kdl_parser</depend>
   <depend>generate_parameter_library</depend>
   <depend>cv_bridge</depend>
+  <depend>image_transport</depend>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
