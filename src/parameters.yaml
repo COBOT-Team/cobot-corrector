@@ -110,7 +110,7 @@ cobot_corrector_params:
       names:
         {
           type: string_array,
-          default_value: ["joint_0", "joint_1", "joint_2", "joint_3", "joint_4"],
+          default_value: ["joint_0_bias", "joint_1_bias", "joint_2_bias", "joint_3_bias", "joint_4_bias"],
           description: "The names of the joints of the robot.",
         }
       mutation_factor:
