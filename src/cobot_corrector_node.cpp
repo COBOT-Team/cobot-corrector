@@ -40,7 +40,7 @@ CobotCorrectorNode::CobotCorrectorNode(rclcpp::Node::SharedPtr node)
   it_ = make_shared<image_transport::ImageTransport>(node);
 
   // Init publishers.
-  const auto commands_pub_name = apply_prefix_(params_->publishers.commands, "/");
+  const auto commands_pub_name = apply_prefix_(params_->publishers.commands, "_");
   commands_pub_ = node->create_publisher<std_msgs::msg::Float64MultiArray>(commands_pub_name, 10);
   const auto stamped_pub_name = apply_prefix_("eef_pose", "/");
   stamped_pub_ = node->create_publisher<geometry_msgs::msg::PoseStamped>(stamped_pub_name, 10);
@@ -386,6 +386,7 @@ void CobotCorrectorNode::execute_srv_callback_(const shared_ptr<CorrectCobotMsg:
   for (size_t i = 0; i < best.rows(); ++i) {
     msg.data.emplace_back(best(i) - kdl_joint_positions_(i));
   }
+  msg.data.emplace_back(0);  // J5 isn't accounted for here
   commands_pub_->publish(msg);
 
   response->success = true;
