@@ -6,21 +6,13 @@ cobot_corrector_params:
       description: "The prefix to attach to parameters for this cobot.",
     }
 
-  aruco:
-    id:
-      {
-        type: int,
-        default_value: 12,
-        description: "The marker ID of this cobot's aruco."
-      }
-    size:
-      {
-        type: double,
-        default_value: 0.0295,
-        description: "The length of one side of the marker, in meters."
-      }
-
   transforms:
+  aruco_frame:
+    {
+      type: string,
+      default_value: "cobot_calibration_aruco",
+      description: "The frame that defines the calibration aruco board."
+    }
     base_frame:
       {
         type: string,
@@ -44,7 +36,7 @@ cobot_corrector_params:
     camera_base_topic:
       {
         type: string,
-        default_value: "kinect2/color/image_raw",
+        default_value: "tof/ir/image_raw",
         description: "The base topic that the overhead camera publishes to."
       }
 
@@ -73,11 +65,11 @@ cobot_corrector_params:
         default_value: "base",
         description: "The name of the base link of the robot.",
       }
-    eef_aruco:
+    tof:
       {
         type: string,
-        default_value: "eef_aruco",
-        description: "The name of the link that ends at the end effector's aruco marker.",
+        default_value: "tof_optical_frame_id",
+        description: "The link that defines the TOF camera's optical frame."
       }
 
 
@@ -110,14 +102,13 @@ cobot_corrector_params:
       names:
         {
           type: string_array,
-          default_value: ["joint_0_bias", "joint_1_bias", "joint_2_bias", "joint_3_bias", "joint_4_bias"],
+          default_value: ["joint_0_bias", "joint_1_bias", "joint_2_bias", "joint_3_bias", "joint_4_bias", "joint_5_bias"],
           description: "The names of the joints of the robot.",
         }
       mutation_factor:
         {
           type: double_array,
-          default_value: [0.017, 0.017, 0.052, 0.017, 0.034],
-          # default_value: [0.005, 0.005, 0.02, 0.005, 0.005],
+          default_value: [0.017, 0.017, 0.034, 0.008, 0.034, 0.034],
           description: "Maximum change for each joint between generations (radians)."
         }
     axes_weights:
@@ -136,7 +127,7 @@ cobot_corrector_params:
       z:
         {
           type: double,
-          default_value: 0.01,
+          default_value: 0.001,
           description: "The weight of the Z axis in the error function."
         }
       roll:

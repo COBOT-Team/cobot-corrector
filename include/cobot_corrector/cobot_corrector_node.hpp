@@ -15,6 +15,7 @@
 #include <kdl/chain.hpp>
 #include <kdl/frames_io.hpp>
 #include <opencv2/opencv.hpp>
+#include <opencv2/aruco.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <std_msgs/msg/float64_multi_array.hpp>
@@ -94,6 +95,7 @@ private:
   cv::Mat camera_matrix_;
   cv::Mat dist_coeffs_;
   cv::Mat image_;
+  cv::Ptr<cv::aruco::GridBoard> aruco_board_;
 
   bool found_image_;
   bool found_robot_desc_;

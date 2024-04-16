@@ -32,6 +32,11 @@ CobotCorrectorNode::CobotCorrectorNode(rclcpp::Node::SharedPtr node)
   param_listener_ = std::make_unique<ParamListener>(node);
   params_ = std::make_unique<Params>(param_listener_->get_params());
 
+  // Init aruco board.
+  aruco_board_ =
+      cv::aruco::GridBoard::create(3, 3, 30.0 / 1000.0, 5.2 / 1000.0,
+                                   cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50), 13);
+
   // Init tf buffer and listener.
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(node->get_clock());
   tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
@@ -93,8 +98,8 @@ void CobotCorrectorNode::robot_description_callback_(const std_msgs::msg::String
 
   // Get the kinematic chain from the tree.
   const auto base_link = apply_prefix_(params_->links.base, "_");
-  const auto eef_aruco_link = apply_prefix_(params_->links.eef_aruco, "_");
-  if (!tree.getChain(base_link, eef_aruco_link, kdl_chain_)) {
+  const auto tof_link = apply_prefix_(params_->links.tof, "_");
+  if (!tree.getChain(base_link, tof_link, kdl_chain_)) {
     RCLCPP_ERROR(node->get_logger(), "Failed to extract KDL chain from KDL tree.");
     return;
   }
@@ -216,33 +221,31 @@ void CobotCorrectorNode::execute_srv_callback_(const shared_ptr<CorrectCobotMsg:
 
   // Find aruco marker in the most recent image.
   RCLCPP_INFO(node->get_logger(), "Finding markers");
-  const auto img_points = [&] {
+  const auto [obj_points, img_points] = [&] {
     vector<int> ids;
-    vector<vector<cv::Point2f>> corners;
-    RCLCPP_INFO(node->get_logger(), "Image: (%d, %d)", image_.cols, image_.rows);
+    vector<vector<cv::Point2f>> corners, rejected;
     RCLCPP_INFO(node->get_logger(), "Detecting markers");
     aruco_detector.detectMarkers(image_, corners, ids);
-    RCLCPP_INFO(node->get_logger(), "Detected markers");
-    const auto it = find(ids.begin(), ids.end(), params_->aruco.id);
-    if (it == ids.end()) return vector<cv::Point2f>();
-    const size_t idx = distance(ids.begin(), it);
-    return corners[idx];
+
+    RCLCPP_INFO(node->get_logger(), "Refining markers");
+    aruco_detector.refineDetectedMarkers(image_, aruco_board_, corners, ids, rejected,
+                                         camera_matrix_, dist_coeffs_);
+
+    RCLCPP_INFO(node->get_logger(), "Matching img and obj points");
+    vector<cv::Point3f> obj_points;
+    vector<cv::Point2f> img_points;
+    aruco_board_->matchImagePoints(corners, ids, obj_points, img_points);
+
+    return make_pair(obj_points, img_points);
   }();
-  if (img_points.size() != 4) {
-    RCLCPP_WARN(node->get_logger(), "Couldn't find aruco marker");
+  if (img_points.size() < 4) {
+    RCLCPP_WARN(node->get_logger(), "Only found %d points, cannot solve PnP", img_points.size());
     return;
   }
+  RCLCPP_INFO(node->get_logger(), "Found %d points", img_points.size());
 
   // Solve PnP problem to estimate the marker's pose.
   RCLCPP_INFO(node->get_logger(), "Solving PnP");
-  const auto obj_points = [&] {
-    const auto aruco_size = params_->aruco.size * 0.5;
-    RCLCPP_INFO(node->get_logger(), "Half aruco %0.4f", aruco_size);
-    return vector<cv::Point3d>{ cv::Point3d(-aruco_size, aruco_size, 0),
-                                cv::Point3d(aruco_size, aruco_size, 0),
-                                cv::Point3d(aruco_size, -aruco_size, 0),
-                                cv::Point3d(-aruco_size, -aruco_size, 0) };
-  }();
   const auto [pnp_ok, tvec, rmat] = [&] {
     cv::Vec3d rvec, tvec;
     cv::Mat rmat(3, 3, CV_64F);
@@ -265,10 +268,11 @@ void CobotCorrectorNode::execute_srv_callback_(const shared_ptr<CorrectCobotMsg:
                            rmat.at<double>(1, 0), rmat.at<double>(1, 1), rmat.at<double>(1, 2),
                            rmat.at<double>(2, 0), rmat.at<double>(2, 1), rmat.at<double>(2, 2));
     tf2::Transform transform(r, t);
+    transform = transform.inverse();
 
     geometry_msgs::msg::PoseStamped pose;
     pose.header.stamp = now;
-    pose.header.frame_id = camera_frame_;
+    pose.header.frame_id = params_->transforms->aruco_frame;
     tf2::toMsg(transform, pose.pose);
     return pose;
   }();
@@ -279,8 +283,8 @@ void CobotCorrectorNode::execute_srv_callback_(const shared_ptr<CorrectCobotMsg:
   geometry_msgs::msg::PoseStamped marker_pose_base_frame;
   try {
     const auto base_frame = apply_prefix_(params_->transforms.base_frame, "_");
-    const auto transform =
-        tf_buffer_->lookupTransform(base_frame, camera_frame_, tf2::TimePointZero);
+    const auto transform = tf_buffer_->lookupTransform(
+        base_frame, marker_pose_camera_frame.header.frame_id, tf2::TimePointZero);
     tf2::doTransform(marker_pose_camera_frame, marker_pose_base_frame, transform);
   } catch (tf2::TransformException& e) {
     RCLCPP_WARN(node->get_logger(), "Failed to transform pose into base frame: %s", e.what());
@@ -386,7 +390,6 @@ void CobotCorrectorNode::execute_srv_callback_(const shared_ptr<CorrectCobotMsg:
   for (size_t i = 0; i < best.rows(); ++i) {
     msg.data.emplace_back(best(i) - kdl_joint_positions_(i));
   }
-  msg.data.emplace_back(0);  // J5 isn't accounted for here
   commands_pub_->publish(msg);
 
   response->success = true;
