@@ -7,12 +7,12 @@ cobot_corrector_params:
     }
 
   transforms:
-  aruco_frame:
-    {
-      type: string,
-      default_value: "cobot_calibration_aruco",
-      description: "The frame that defines the calibration aruco board."
-    }
+    aruco_frame:
+      {
+        type: string,
+        default_value: "cobot_calibration_aruco",
+        description: "The frame that defines the calibration aruco board."
+      }
     base_frame:
       {
         type: string,
@@ -102,7 +102,7 @@ cobot_corrector_params:
       names:
         {
           type: string_array,
-          default_value: ["joint_0_bias", "joint_1_bias", "joint_2_bias", "joint_3_bias", "joint_4_bias", "joint_5_bias"],
+          default_value: ["joint_0", "joint_1", "joint_2", "joint_3", "joint_4", "joint_5"],
           description: "The names of the joints of the robot.",
         }
       mutation_factor:

@@ -24,18 +24,19 @@ using CorrectCobotMsg = chess_msgs::srv::CorrectCobot;
 //                                                                                                //
 
 CobotCorrectorNode::CobotCorrectorNode(rclcpp::Node::SharedPtr node)
-  : node(node), found_image_(false), found_robot_desc_(false), found_joint_states_(false)
+  : node(node)
+  , found_image_(false)
+  , found_robot_desc_(false)
+  , found_joint_states_(false)
+  , aruco_board_(cv::Size(3, 3), 30.0 / 1000.0, 5.2 / 1000.0,
+                 cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50),
+                 array<int, 9>{ 13, 14, 15, 16, 17, 18, 19, 20, 21 })
 {
   srand(time(nullptr));
 
   // Grab params.
   param_listener_ = std::make_unique<ParamListener>(node);
   params_ = std::make_unique<Params>(param_listener_->get_params());
-
-  // Init aruco board.
-  aruco_board_ =
-      cv::aruco::GridBoard::create(3, 3, 30.0 / 1000.0, 5.2 / 1000.0,
-                                   cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50), 13);
 
   // Init tf buffer and listener.
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(node->get_clock());
@@ -98,7 +99,7 @@ void CobotCorrectorNode::robot_description_callback_(const std_msgs::msg::String
 
   // Get the kinematic chain from the tree.
   const auto base_link = apply_prefix_(params_->links.base, "_");
-  const auto tof_link = apply_prefix_(params_->links.tof, "_");
+  const auto tof_link = params_->links.tof;
   if (!tree.getChain(base_link, tof_link, kdl_chain_)) {
     RCLCPP_ERROR(node->get_logger(), "Failed to extract KDL chain from KDL tree.");
     return;
@@ -182,7 +183,7 @@ void CobotCorrectorNode::camera_callback_(const sensor_msgs::msg::Image::ConstSh
   // Get the image.
   try {
     uint8_t* dta = const_cast<uint8_t*>(image->data.data());
-    cv::Mat(image->height, image->width, CV_8UC3, dta).copyTo(image_);
+    cv::Mat(image->height, image->width, CV_32FC1, dta).copyTo(image_);
     found_image_ = true;
   } catch (cv_bridge::Exception& e) {
     RCLCPP_ERROR(node->get_logger(), "cv_bridge exception: %s", e.what());
@@ -219,30 +220,40 @@ void CobotCorrectorNode::execute_srv_callback_(const shared_ptr<CorrectCobotMsg:
   static const auto aruco_dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_4X4_50);
   static const cv::aruco::ArucoDetector aruco_detector(aruco_dictionary, aruco_detector_params);
 
+  // Convert image to undistorted 8-bit.
+  const auto [img_u8, img_undistorted] = [&] {
+    cv::Mat img_u8(image_.rows, image_.cols, CV_8U);
+    cv::Mat img_undistorted(image_.rows, image_.cols, CV_8U);
+    cv::normalize(image_, img_u8, 0, 255, cv::NORM_MINMAX, CV_8U);
+    cv::undistort(img_u8, img_undistorted, camera_matrix_, dist_coeffs_);
+    return make_pair(img_u8, img_undistorted);
+  }();
+
   // Find aruco marker in the most recent image.
   RCLCPP_INFO(node->get_logger(), "Finding markers");
   const auto [obj_points, img_points] = [&] {
     vector<int> ids;
     vector<vector<cv::Point2f>> corners, rejected;
     RCLCPP_INFO(node->get_logger(), "Detecting markers");
-    aruco_detector.detectMarkers(image_, corners, ids);
+    aruco_detector.detectMarkers(img_undistorted, corners, ids);
 
     RCLCPP_INFO(node->get_logger(), "Refining markers");
-    aruco_detector.refineDetectedMarkers(image_, aruco_board_, corners, ids, rejected,
+    aruco_detector.refineDetectedMarkers(img_u8, aruco_board_, corners, ids, rejected,
                                          camera_matrix_, dist_coeffs_);
 
     RCLCPP_INFO(node->get_logger(), "Matching img and obj points");
     vector<cv::Point3f> obj_points;
     vector<cv::Point2f> img_points;
-    aruco_board_->matchImagePoints(corners, ids, obj_points, img_points);
+    if (ids.empty()) return make_pair(obj_points, img_points);
+    aruco_board_.matchImagePoints(corners, ids, obj_points, img_points);
 
     return make_pair(obj_points, img_points);
   }();
   if (img_points.size() < 4) {
-    RCLCPP_WARN(node->get_logger(), "Only found %d points, cannot solve PnP", img_points.size());
+    RCLCPP_WARN(node->get_logger(), "Only found %lu points, cannot solve PnP", img_points.size());
     return;
   }
-  RCLCPP_INFO(node->get_logger(), "Found %d points", img_points.size());
+  RCLCPP_INFO(node->get_logger(), "Found %lu points", img_points.size());
 
   // Solve PnP problem to estimate the marker's pose.
   RCLCPP_INFO(node->get_logger(), "Solving PnP");
@@ -250,7 +261,7 @@ void CobotCorrectorNode::execute_srv_callback_(const shared_ptr<CorrectCobotMsg:
     cv::Vec3d rvec, tvec;
     cv::Mat rmat(3, 3, CV_64F);
     if (!solvePnP(obj_points, img_points, camera_matrix_, dist_coeffs_, rvec, tvec, false,
-                  cv::SOLVEPNP_IPPE_SQUARE)) {
+                  cv::SOLVEPNP_IPPE)) {
       RCLCPP_WARN(node->get_logger(), "Failed to solve the PnP problem");
       return make_tuple(false, tvec, rmat);
     }
@@ -272,7 +283,7 @@ void CobotCorrectorNode::execute_srv_callback_(const shared_ptr<CorrectCobotMsg:
 
     geometry_msgs::msg::PoseStamped pose;
     pose.header.stamp = now;
-    pose.header.frame_id = params_->transforms->aruco_frame;
+    pose.header.frame_id = params_->transforms.aruco_frame;
     tf2::toMsg(transform, pose.pose);
     return pose;
   }();
